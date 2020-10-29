@@ -23,9 +23,12 @@ int main(int argc, char *argv[]) {
     FLAGS_log_dir = WORK_SPACE_PATH + "/Log";
     FLAGS_alsologtostderr = 1;
 
-    ros::init(argc, argv, "front_end_node");
-    ros::NodeHandle nh;
+    ros::init(argc, argv, "front_end_node"); //节点初始化
+    ros::NodeHandle nh; //节点句柄
 
+    //类的封装，订阅/kitti/velo/pointcloud话题
+    //******************************************
+    //1.
     std::shared_ptr<CloudSubscriber> cloud_sub_ptr = std::make_shared<CloudSubscriber>(nh, "/kitti/velo/pointcloud", 100000);
     std::shared_ptr<IMUSubscriber> imu_sub_ptr = std::make_shared<IMUSubscriber>(nh, "/kitti/oxts/imu", 1000000);
     std::shared_ptr<GNSSSubscriber> gnss_sub_ptr = std::make_shared<GNSSSubscriber>(nh, "/kitti/oxts/gps/fix", 1000000);
@@ -55,9 +58,9 @@ int main(int argc, char *argv[]) {
     bool time_inited = false;
     bool has_global_map_published = false;
 
-    ros::Rate rate(100);
+    ros::Rate rate(100); //程序运行的频率 100HZ
     while (ros::ok()) {
-        ros::spinOnce();
+        ros::spinOnce(); //监听反馈函数
 
         cloud_sub_ptr->ParseData(cloud_data_buff);
         imu_sub_ptr->ParseData(imu_data_buff);
@@ -69,7 +72,7 @@ int main(int argc, char *argv[]) {
             }
         } else {
             while (cloud_data_buff.size() > 0 && imu_data_buff.size() > 0 && gnss_data_buff.size() > 0) {
-                CloudData cloud_data = cloud_data_buff.front();
+                CloudData cloud_data = cloud_data_buff.front(); // 在队列中返回头部第一个元素的引用
                 IMUData imu_data = imu_data_buff.front();
                 GNSSData gnss_data = gnss_data_buff.front();
 
@@ -80,9 +83,10 @@ int main(int argc, char *argv[]) {
                     run_time = cloud_data.time - init_time;
                 }
 
+                //时间对齐？？？
                 double d_time = cloud_data.time - imu_data.time;
                 if (d_time < -0.05) {
-                    cloud_data_buff.pop_front();
+                    cloud_data_buff.pop_front(); //删除队列最前一个元素
                 } else if (d_time > 0.05) {
                     imu_data_buff.pop_front();
                     gnss_data_buff.pop_front();
@@ -91,7 +95,7 @@ int main(int argc, char *argv[]) {
                     imu_data_buff.pop_front();
                     gnss_data_buff.pop_front();
 
-                    Eigen::Matrix4f odometry_matrix = Eigen::Matrix4f::Identity();
+                    Eigen::Matrix4f odometry_matrix = Eigen::Matrix4f::Identity(); //初始化一个4×4的单位矩阵
 
                     if (!gnss_origin_position_inited) {
                         gnss_data.InitOriginPosition();

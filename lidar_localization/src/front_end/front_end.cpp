@@ -87,12 +87,13 @@ void FrontEnd::UpdateNewFrame(const Frame& new_key_frame) {
     key_frame.cloud_data.cloud_ptr.reset(new CloudData::CLOUD(*new_key_frame.cloud_data.cloud_ptr));
     CloudData::CLOUD_PTR transformed_cloud_ptr(new CloudData::CLOUD());
     
-    // 更新局部地图
+    // 更新局部地图，局部地图大于20帧，删除最开始的
     local_map_frames_.push_back(key_frame);
     while (local_map_frames_.size() > 20) {
         local_map_frames_.pop_front();
     }
     local_map_ptr_.reset(new CloudData::CLOUD());
+    //对点云进行变换
     for (size_t i = 0; i < local_map_frames_.size(); ++i) {
         pcl::transformPointCloud(*local_map_frames_.at(i).cloud_data.cloud_ptr, 
                                  *transformed_cloud_ptr, 
@@ -103,7 +104,7 @@ void FrontEnd::UpdateNewFrame(const Frame& new_key_frame) {
 
     // 更新ndt匹配的目标点云
     if (local_map_frames_.size() < 10) {
-        ndt_ptr_->setInputTarget(local_map_ptr_);
+        ndt_ptr_->setInputTarget(local_map_ptr_); //QS：为什么这里不需要滤波？？
     } else {
         CloudData::CLOUD_PTR filtered_local_map_ptr(new CloudData::CLOUD());
         local_map_filter_.setInputCloud(local_map_ptr_);
