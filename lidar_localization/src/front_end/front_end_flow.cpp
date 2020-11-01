@@ -39,7 +39,9 @@ bool FrontEndFlow::Run() {
     while(HasData()) {
         if (!ValidData())
             continue;
-        UpdateGNSSOdometry();
+        //QS：更新GNSS
+        UpdateGNSSOdometry(); //QS：为什么命名为GNSSOdometry
+        //QS：更新laser
         if (UpdateLaserOdometry())
             PublishData();
     }
@@ -66,6 +68,7 @@ bool FrontEndFlow::InitCalibration() {
     return calibration_received;
 }
 
+//GNSS数据从哪来的？bag？
 bool FrontEndFlow::InitGNSS() {
     static bool gnss_inited = false;
     if (!gnss_inited && gnss_data_buff_.size() > 0) {
@@ -93,6 +96,7 @@ bool FrontEndFlow::ValidData() {
     current_imu_data_ = imu_data_buff_.front();
     current_gnss_data_ = gnss_data_buff_.front();
 
+    //QS：如何保证时间同步
     double d_time = current_cloud_data_.time - current_imu_data_.time;
     if (d_time < -0.05) {
         cloud_data_buff_.pop_front();
@@ -112,21 +116,26 @@ bool FrontEndFlow::ValidData() {
     return true;
 }
 
+//QS：用GNSS和IMU初始化里程位姿
 bool FrontEndFlow::UpdateGNSSOdometry() {
     gnss_odometry_ = Eigen::Matrix4f::Identity();
 
+    //QS：把GNSS定位信息转换成东北天坐标系(ENU坐标系)
+    //QS: 该步骤作用？
     current_gnss_data_.UpdateXYZ();
     gnss_odometry_(0,3) = current_gnss_data_.local_E;
     gnss_odometry_(1,3) = current_gnss_data_.local_N;
     gnss_odometry_(2,3) = current_gnss_data_.local_U;
     gnss_odometry_.block<3,3>(0,0) = current_imu_data_.GetOrientationMatrix();
-    gnss_odometry_ *= lidar_to_imu_;
+    gnss_odometry_ *= lidar_to_imu_; //QS：该步骤作用？
 
     return true;
 }
 
+//更新雷达点云里程计
 bool FrontEndFlow::UpdateLaserOdometry() {
     static bool front_end_pose_inited = false;
+    //QS：用第一帧GNSS初始化，什么意思？？
     if (!front_end_pose_inited) {
         front_end_pose_inited = true;
         front_end_ptr_->SetInitPose(gnss_odometry_);

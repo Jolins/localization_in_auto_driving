@@ -15,6 +15,7 @@
 
 #include "lidar_localization/sensor_data/cloud_data.hpp"
 #include "lidar_localization/models/registration/ndt_registration.hpp"
+#include "lidar_localization/models/registration/icp_registration.hpp"
 #include "lidar_localization/models/cloud_filter/voxel_filter.hpp"
 
 namespace lidar_localization {

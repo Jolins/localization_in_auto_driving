@@ -22,6 +22,7 @@ void GNSSData::UpdateXYZ() {
     if (!origin_position_inited) {
         LOG(WARNING) << "GeoConverter has not set origin position";
     }
+    //把经纬度坐标系转换成ENU坐标系
     geo_converter.Forward(latitude, longitude, altitude, local_E, local_N, local_U);
 }
 }

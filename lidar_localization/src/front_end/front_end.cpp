@@ -19,12 +19,15 @@ FrontEnd::FrontEnd()
      global_map_ptr_(new CloudData::CLOUD()),
      result_cloud_ptr_(new CloudData::CLOUD()) {
     
-    InitWithConfig();
+    InitWithConfig(); //QS：什么时候进入该函数，创建对象的时候调用构造函数??
 }
 
 bool FrontEnd::InitWithConfig() {
     std::string config_file_path = WORK_SPACE_PATH + "/config/front_end/config.yaml";
     YAML::Node config_node = YAML::LoadFile(config_file_path);
+
+    std::cout << config_file_path << std::endl;
+    std::cout << config_node << std::endl;
 
     InitDataPath(config_node);
     InitRegistration(registration_ptr_, config_node);
@@ -79,6 +82,9 @@ bool FrontEnd::InitRegistration(std::shared_ptr<RegistrationInterface>& registra
 
     if (registration_method == "NDT") {
         registration_ptr = std::make_shared<NDTRegistration>(config_node[registration_method]);
+        std::cout << config_node << std::endl;
+    } else if(registration_method == "ICP") {
+        registration_ptr = std::make_shared<ICPRegistration>(config_node[registration_method]);
     } else {
         LOG(ERROR) << "没找到与 " << registration_method << " 相对应的点云匹配方式!";
         return false;
@@ -124,10 +130,12 @@ bool FrontEnd::Update(const CloudData& cloud_data, Eigen::Matrix4f& cloud_pose) 
     }
 
     // 不是第一帧，就正常匹配
+    // QS：帧和帧之间匹配？？
     registration_ptr_->ScanMatch(filtered_cloud_ptr, predict_pose, result_cloud_ptr_, current_frame_.pose);
     cloud_pose = current_frame_.pose;
 
     // 更新相邻两帧的相对运动
+    // QS：什么意思？？？
     step_pose = last_pose.inverse() * current_frame_.pose;
     predict_pose = current_frame_.pose * step_pose;
     last_pose = current_frame_.pose;
